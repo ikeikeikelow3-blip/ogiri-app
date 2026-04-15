@@ -1,0 +1,8 @@
+{
+  "name": "oogiri-dojo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}
