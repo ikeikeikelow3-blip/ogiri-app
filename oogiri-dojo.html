@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1a1114">
+<meta name="description" content="大喜利道場 — AIが採点する大喜利トレーニングアプリ">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎤</text></svg>">
+<title>大喜利道場</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Dela+Gothic+One&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#1a1114; --surface:#2a1f23; --surface2:#3a2d32;
+    --gold:#e8b830; --gold-dim:#a8841f; --red:#d44040;
+    --cream:#f5e6d0; --cream-dim:#bfab94; --white:#fff;
+    --green:#4ecb71; --blue:#5ba0e8; --purple:#b07ee8;
+    --orange:#e89040; --pink:#e86080;
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    font-family:'Zen Maru Gothic',sans-serif;
+    background:var(--bg);color:var(--cream);
+    min-height:100vh;min-height:100dvh;
+    overflow-x:hidden;
+    -webkit-tap-highlight-color:transparent;
+    padding-top:var(--safe-top);
+    padding-bottom:var(--safe-bottom);
+  }
+  body::before{
+    content:'';position:fixed;inset:0;
+    background:radial-gradient(ellipse at 20% 0%,rgba(232,184,48,.06) 0%,transparent 50%),
+               radial-gradient(ellipse at 80% 100%,rgba(212,64,64,.06) 0%,transparent 50%);
+    pointer-events:none;z-index:0;
+  }
+
+  /* ===== LOGIN ===== */
+  .login-screen{
+    position:fixed;inset:0;z-index:1000;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg);transition:opacity .6s,transform .6s;
+  }
+  .login-screen.hiding{opacity:0;transform:scale(1.05);pointer-events:none;}
+  .login-screen.gone{display:none;}
+  .login-card{text-align:center;padding:40px 28px;max-width:420px;width:92%;}
+  .login-emblem{
+    font-size:64px;margin-bottom:10px;
+    animation:emblemFloat 3s ease-in-out infinite;
+    filter:drop-shadow(0 0 30px rgba(232,184,48,.3));
+  }
+  @keyframes emblemFloat{
+    0%,100%{transform:translateY(0) rotate(0deg)}
+    25%{transform:translateY(-10px) rotate(-3deg)}
+    75%{transform:translateY(-5px) rotate(3deg)}
+  }
+  .login-title{
+    font-family:'Dela Gothic One',sans-serif;font-size:clamp(2rem,8vw,2.8rem);
+    background:linear-gradient(135deg,var(--gold),#f0d060,var(--gold-dim));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;letter-spacing:.1em;margin-bottom:6px;
+  }
+  .login-subtitle{color:var(--cream-dim);font-size:.85rem;letter-spacing:.2em;margin-bottom:36px;}
+  .login-input-group{margin-bottom:20px;}
+  .login-input-group label{
+    display:block;text-align:left;color:var(--gold);
+    font-size:.8rem;font-weight:700;letter-spacing:.1em;margin-bottom:8px;
+  }
+  .login-input{
+    width:100%;padding:16px 20px;background:var(--surface);
+    border:2px solid var(--surface2);border-radius:12px;color:var(--cream);
+    font-family:'Zen Maru Gothic',sans-serif;font-size:1.1rem;
+    font-weight:700;text-align:center;transition:border-color .3s,box-shadow .3s;
+  }
+  .login-input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 20px rgba(232,184,48,.15);}
+  .login-input::placeholder{color:rgba(191,171,148,.35);font-weight:400;}
+  .login-enter-btn{
+    width:100%;padding:18px;margin-top:10px;
+    background:linear-gradient(135deg,var(--red),#b03030);
+    color:var(--white);border:none;border-radius:12px;
+    font-family:'Dela Gothic One',sans-serif;font-size:1.1rem;
+    letter-spacing:.15em;cursor:pointer;transition:all .3s;
+    position:relative;overflow:hidden;
+  }
+  .login-enter-btn::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,transparent 30%,rgba(255,255,255,.15) 50%,transparent 70%);
+    transform:translateX(-100%);transition:transform .6s;
+  }
+  .login-enter-btn:hover::before{transform:translateX(100%);}
+  .login-enter-btn:active{transform:scale(.97);}
+  .login-enter-btn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+  .login-ornament{
+    margin-top:32px;display:flex;align-items:center;justify-content:center;
+    gap:12px;color:var(--gold-dim);font-size:.75rem;letter-spacing:.15em;
+  }
+  .login-ornament::before,.login-ornament::after{content:'';width:40px;height:1px;background:var(--gold-dim);opacity:.4;}
+
+  /* ===== APP ===== */
+  .app{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:20px 16px calc(40px + var(--safe-bottom));}
+  .app.gone{display:none;}
+  .header{text-align:center;padding:24px 0 10px;}
+  .header::before{
+    content:'🎤';font-size:44px;display:block;margin-bottom:8px;
+    filter:drop-shadow(0 0 20px rgba(232,184,48,.4));
+    animation:float 3s ease-in-out infinite;
+  }
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .header h1{
+    font-family:'Dela Gothic One',sans-serif;font-size:clamp(1.6rem,6vw,2.4rem);
+    background:linear-gradient(135deg,var(--gold),#f0d060,var(--gold));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;letter-spacing:.08em;
+  }
+  .user-bar{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:8px;}
+  .user-bar .user-name{color:var(--gold);font-weight:900;font-size:.9rem;}
+  .user-bar .logout-btn{
+    background:none;border:1px solid var(--surface2);color:var(--cream-dim);
+    font-family:inherit;font-size:.72rem;padding:4px 12px;border-radius:12px;
+    cursor:pointer;transition:all .2s;
+  }
+  .user-bar .logout-btn:active{border-color:var(--red);color:var(--red);}
+
+  .noren{display:flex;align-items:center;gap:12px;margin:24px 0 20px;}
+  .noren::before,.noren::after{content:'';flex:1;height:2px;background:linear-gradient(90deg,transparent,var(--gold-dim),transparent);}
+  .noren span{font-family:'Dela Gothic One',sans-serif;color:var(--gold);font-size:.9rem;white-space:nowrap;letter-spacing:.15em;}
+
+  .ranking-btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;padding:14px;margin-bottom:20px;
+    background:linear-gradient(135deg,#2e2228,#3a2530);
+    border:2px solid var(--gold-dim);border-radius:12px;
+    color:var(--gold);font-family:'Dela Gothic One',sans-serif;
+    font-size:1rem;letter-spacing:.1em;cursor:pointer;transition:all .3s;
+    position:relative;overflow:hidden;
+  }
+  .ranking-btn::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg,transparent,rgba(232,184,48,.06),transparent);
+    animation:shimmer 3s ease-in-out infinite;
+  }
+  @keyframes shimmer{0%,100%{transform:translateX(-100%)}50%{transform:translateX(100%)}}
+  .ranking-btn:active{transform:scale(.97);}
+
+  .topics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px;}
+  .topic-card{
+    background:var(--surface);border:2px solid transparent;border-radius:12px;
+    padding:14px 12px;text-align:center;cursor:pointer;
+    transition:all .2s ease;
+    position:relative;overflow:hidden;font-size:.95rem;font-weight:700;line-height:1.5;
+    -webkit-user-select:none;user-select:none;
+  }
+  .topic-card:active{transform:scale(.96);}
+  .topic-card.selected{
+    border-color:var(--gold);
+    background:linear-gradient(135deg,rgba(232,184,48,.15),rgba(232,184,48,.05));
+    box-shadow:0 0 20px rgba(232,184,48,.12);
+  }
+  .topic-card.selected::after{
+    content:'✓';position:absolute;top:6px;right:10px;
+    color:var(--gold);font-size:.8rem;font-weight:900;
+  }
+
+  .refresh-btn{
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    margin:12px auto 0;background:none;border:1px solid var(--surface2);
+    color:var(--cream-dim);padding:8px 20px;border-radius:20px;
+    cursor:pointer;font-family:inherit;font-size:.82rem;transition:all .2s;
+  }
+  .refresh-btn:active{border-color:var(--gold-dim);color:var(--gold);}
+  .refresh-btn .icon{transition:transform .4s;}
+
+  .answer-section{margin-top:24px;}
+  .selected-topic-display{
+    background:linear-gradient(90deg,var(--red),#c03030);color:var(--white);
+    padding:12px 16px;border-radius:10px 10px 0 0;font-weight:900;font-size:1rem;
+    display:flex;align-items:center;gap:10px;
+  }
+  .selected-topic-display .label{
+    background:rgba(0,0,0,.25);padding:2px 10px;border-radius:4px;
+    font-size:.72rem;font-weight:700;letter-spacing:.08em;flex-shrink:0;
+  }
+  .answer-box{background:var(--surface);border-radius:0 0 10px 10px;padding:14px;}
+  textarea{
+    width:100%;min-height:90px;background:var(--bg);
+    border:2px solid var(--surface2);border-radius:8px;color:var(--cream);
+    font-family:'Zen Maru Gothic',sans-serif;font-size:1rem;
+    padding:12px;resize:vertical;transition:border-color .2s;line-height:1.7;
+  }
+  textarea:focus{outline:none;border-color:var(--gold);}
+  textarea::placeholder{color:rgba(191,171,148,.4);}
+  .char-count{text-align:right;color:var(--cream-dim);font-size:.75rem;margin-top:6px;}
+
+  .submit-btn{
+    display:block;width:100%;margin-top:14px;padding:16px;
+    background:linear-gradient(135deg,var(--red),#b03030);
+    color:var(--white);border:none;border-radius:12px;
+    font-family:'Dela Gothic One',sans-serif;font-size:1.15rem;
+    letter-spacing:.1em;cursor:pointer;transition:all .3s;
+    position:relative;overflow:hidden;
+  }
+  .submit-btn::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,transparent 30%,rgba(255,255,255,.1) 50%,transparent 70%);
+    transform:translateX(-100%);transition:transform .6s;
+  }
+  .submit-btn:active:not(:disabled){transform:scale(.97);}
+  .submit-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+
+  /* ===== RESULT ===== */
+  .result-panel{
+    margin-top:24px;background:var(--surface);border-radius:14px;
+    overflow:hidden;animation:slideUp .5s ease-out;border:1px solid var(--surface2);
+  }
+  @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+  .score-header{background:linear-gradient(135deg,var(--surface2),var(--surface));padding:24px 20px;text-align:center;}
+  .score-ring{width:140px;height:140px;margin:0 auto 12px;position:relative;}
+  .score-ring svg{width:100%;height:100%;transform:rotate(-90deg);}
+  .score-ring .bg-circle{fill:none;stroke:var(--bg);stroke-width:8;}
+  .score-ring .score-circle{
+    fill:none;stroke-width:8;stroke-linecap:round;
+    stroke-dasharray:408;stroke-dashoffset:408;
+    transition:stroke-dashoffset 1.5s cubic-bezier(.4,0,.2,1);
+  }
+  .score-number{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:'Dela Gothic One',sans-serif;font-size:2.6rem;
+  }
+  .score-number small{font-size:.85rem;margin-left:2px;opacity:.6;}
+  .score-label{font-family:'Dela Gothic One',sans-serif;font-size:1.05rem;letter-spacing:.15em;}
+
+  .analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid rgba(232,184,48,.1);}
+  .analysis-item{padding:12px 14px;border-bottom:1px solid rgba(232,184,48,.06);border-right:1px solid rgba(232,184,48,.06);}
+  .analysis-item:nth-child(even){border-right:none;}
+  .analysis-item .a-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+  .analysis-item .a-label{font-size:.72rem;color:var(--cream-dim);display:flex;align-items:center;gap:3px;}
+  .analysis-item .a-label .a-icon{font-size:.82rem;}
+  .analysis-item .a-score{font-family:'Dela Gothic One',sans-serif;font-size:.95rem;}
+  .analysis-item .a-bar{height:5px;background:var(--bg);border-radius:3px;overflow:hidden;}
+  .analysis-item .a-bar-fill{height:100%;border-radius:3px;transition:width 1.2s cubic-bezier(.4,0,.2,1);width:0;}
+  .analysis-item .a-comment{font-size:.7rem;color:var(--cream-dim);margin-top:5px;line-height:1.5;}
+
+  .advice-section{padding:18px 16px;border-top:1px solid rgba(232,184,48,.1);}
+  .advice-title{display:flex;align-items:center;gap:8px;font-weight:900;color:var(--gold);margin-bottom:10px;font-size:.9rem;}
+  .advice-text{color:var(--cream);line-height:1.85;font-size:.88rem;}
+  .advice-text p{margin-bottom:8px;}
+
+  .loading-overlay{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:50px 20px;gap:16px;}
+  .loading-dots{display:flex;gap:8px;}
+  .loading-dots span{width:12px;height:12px;background:var(--gold);border-radius:50%;animation:bounce 1.2s ease-in-out infinite;}
+  .loading-dots span:nth-child(2){animation-delay:.15s;}
+  .loading-dots span:nth-child(3){animation-delay:.3s;}
+  @keyframes bounce{0%,80%,100%{transform:scale(.6);opacity:.3}40%{transform:scale(1);opacity:1}}
+  .loading-text{color:var(--cream-dim);font-size:.9rem;animation:pulse 1.5s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+
+  .history-section{margin-top:28px;}
+  .history-item{
+    background:var(--surface);border-radius:10px;padding:12px 14px;margin-bottom:8px;
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:.86rem;border:1px solid var(--surface2);
+  }
+  .history-item .h-topic{color:var(--cream-dim);font-size:.72rem;}
+  .history-item .h-answer{font-weight:700;margin-top:2px;}
+  .history-item .h-score{font-family:'Dela Gothic One',sans-serif;font-size:1.2rem;flex-shrink:0;margin-left:12px;}
+
+  .empty-state{text-align:center;padding:28px;color:var(--cream-dim);font-size:.85rem;opacity:.6;}
+  .color-great{color:var(--gold);}
+  .color-good{color:var(--green);}
+  .color-ok{color:var(--blue);}
+  .color-low{color:var(--red);}
+
+  /* ===== RANKING MODAL ===== */
+  .modal-overlay{
+    position:fixed;inset:0;z-index:2000;
+    background:rgba(10,6,8,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;pointer-events:none;transition:opacity .35s;
+  }
+  .modal-overlay.active{opacity:1;pointer-events:auto;}
+  .modal-content{
+    background:var(--bg);border:1px solid var(--surface2);border-radius:18px;
+    width:92%;max-width:520px;max-height:80vh;max-height:80dvh;overflow-y:auto;
+    transform:translateY(30px) scale(.95);
+    transition:transform .4s cubic-bezier(.4,0,.2,1);position:relative;
+    -webkit-overflow-scrolling:touch;
+  }
+  .modal-overlay.active .modal-content{transform:translateY(0) scale(1);}
+  .modal-header{text-align:center;padding:24px 20px 14px;position:sticky;top:0;background:var(--bg);z-index:1;}
+  .modal-header h2{font-family:'Dela Gothic One',sans-serif;font-size:1.3rem;color:var(--gold);letter-spacing:.12em;}
+  .modal-header p{color:var(--cream-dim);font-size:.76rem;margin-top:4px;}
+  .modal-close{
+    position:absolute;top:14px;right:14px;
+    background:var(--surface);border:1px solid var(--surface2);color:var(--cream-dim);
+    width:36px;height:36px;border-radius:50%;font-size:1.1rem;
+    cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;
+  }
+  .modal-close:active{border-color:var(--red);color:var(--red);}
+
+  /* Top-10 ranking list */
+  .ranking-list{padding:0 14px 20px;}
+  .rank-row{
+    display:flex;align-items:center;gap:10px;padding:13px 14px;
+    background:var(--surface);border-radius:12px;margin-bottom:8px;
+    border:1px solid var(--surface2);animation:slideUp .3s ease-out both;
+    position:relative;overflow:hidden;
+  }
+  .rank-row.rank-1st{
+    background:linear-gradient(135deg,rgba(232,184,48,.15),rgba(232,184,48,.05));
+    border:2px solid var(--gold);box-shadow:0 0 24px rgba(232,184,48,.15);padding:16px 14px;
+  }
+  .rank-row.rank-1st::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg,transparent,rgba(232,184,48,.05),transparent);
+    animation:shimmer 3s ease-in-out infinite;
+  }
+  .rank-row.rank-2nd{
+    background:linear-gradient(135deg,rgba(192,192,192,.1),rgba(192,192,192,.03));
+    border:2px solid rgba(192,192,192,.5);box-shadow:0 0 16px rgba(192,192,192,.08);padding:15px 14px;
+  }
+  .rank-row.rank-3rd{
+    background:linear-gradient(135deg,rgba(205,133,68,.1),rgba(205,133,68,.03));
+    border:2px solid rgba(205,133,68,.5);box-shadow:0 0 16px rgba(205,133,68,.08);padding:15px 14px;
+  }
+  .rank-medal{
+    width:40px;height:40px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:900;flex-shrink:0;position:relative;
+    font-family:'Dela Gothic One',sans-serif;font-size:1rem;
+  }
+  .rank-1st .rank-medal{
+    background:linear-gradient(135deg,#f0d060,#e8b830,#d4a020);
+    color:#1a1114;font-size:1.15rem;box-shadow:0 0 18px rgba(232,184,48,.4);
+  }
+  .rank-1st .rank-medal::after{
+    content:'👑';position:absolute;top:-16px;font-size:14px;
+    animation:crownBounce 2s ease-in-out infinite;
+  }
+  @keyframes crownBounce{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-3px) rotate(5deg)}}
+  .rank-2nd .rank-medal{background:linear-gradient(135deg,#d0d0d0,#a8a8a8);color:#1a1114;box-shadow:0 0 12px rgba(192,192,192,.3);}
+  .rank-3rd .rank-medal{background:linear-gradient(135deg,#cd8544,#a06830);color:#1a1114;box-shadow:0 0 12px rgba(180,120,60,.3);}
+  .rank-num{
+    font-family:'Dela Gothic One',sans-serif;font-size:.82rem;
+    color:var(--cream-dim);width:40px;height:40px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;background:var(--bg);border-radius:50%;
+  }
+  .rank-1st .rank-name{color:var(--gold);font-size:.92rem;}
+  .rank-2nd .rank-name{color:#ccc;}
+  .rank-3rd .rank-name{color:#cd8544;}
+  .rank-info{flex:1;min-width:0;}
+  .rank-info .rank-name{font-weight:900;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rank-info .rank-answer{color:var(--cream-dim);font-size:.75rem;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rank-info .rank-topic{color:rgba(191,171,148,.45);font-size:.66rem;margin-top:2px;}
+  .rank-score{font-family:'Dela Gothic One',sans-serif;font-size:1.2rem;flex-shrink:0;}
+  .rank-score small{font-size:.55em;opacity:.5;}
+  .rank-1st .rank-score{color:var(--gold);font-size:1.4rem;}
+  .rank-2nd .rank-score{color:#ccc;font-size:1.3rem;}
+  .rank-3rd .rank-score{color:#cd8544;font-size:1.3rem;}
+  .sparkle-wrap{position:relative;display:inline-flex;}
+  .sparkle-wrap::before,.sparkle-wrap::after{
+    content:'✦';position:absolute;font-size:9px;color:var(--gold);
+    animation:sparkle 2s ease-in-out infinite;opacity:.6;
+  }
+  .sparkle-wrap::before{top:-6px;right:-6px;}
+  .sparkle-wrap::after{bottom:-4px;left:-6px;animation-delay:1s;}
+  @keyframes sparkle{0%,100%{opacity:.2;transform:scale(.8)}50%{opacity:1;transform:scale(1.2)}}
+  .ranking-empty{text-align:center;padding:40px 20px;color:var(--cream-dim);font-size:.88rem;}
+
+  @media(max-width:380px){
+    .topics-grid{gap:6px;}
+    .topic-card{padding:10px 8px;font-size:.85rem;}
+    .analysis-grid{grid-template-columns:1fr;}
+    .analysis-item{border-right:none!important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="login-emblem">🎤</div>
+    <div class="login-title">大喜利道場</div>
+    <div class="login-subtitle">— 笑いの腕を磨け —</div>
+    <div class="login-input-group">
+      <label>芸 名 を 入 力</label>
+      <input type="text" class="login-input" id="nameInput" placeholder="あなたの名前" maxlength="20"
+        oninput="document.getElementById('enterBtn').disabled=!this.value.trim()"
+        enterkeyhint="go">
+    </div>
+    <button class="login-enter-btn" id="enterBtn" onclick="enterApp()" disabled>入 門 す る</button>
+    <div class="login-ornament">笑門来福</div>
+  </div>
+</div>
+
+<div class="app gone" id="mainApp">
+  <div class="header">
+    <h1>大喜利道場</h1>
+    <div class="user-bar">
+      <span class="user-name" id="displayName"></span>
+      <button class="logout-btn" onclick="logout()">退門</button>
+    </div>
+  </div>
+  <button class="ranking-btn" onclick="openRanking()">🏆 ランキングを見る</button>
+  <div class="noren"><span>お 題 を 選 べ</span></div>
+  <div class="topics-grid" id="topicsGrid"></div>
+  <button class="refresh-btn" onclick="refreshTopics()"><span class="icon">↻</span> お題を変える</button>
+  <div class="answer-section">
+    <div class="selected-topic-display">
+      <span class="label">お題</span>
+      <span id="selectedTopicText">お題を選んでください</span>
+    </div>
+    <div class="answer-box">
+      <textarea id="answerInput" placeholder="ここに渾身のボケを書け…" oninput="updateCharCount()" enterkeyhint="done"></textarea>
+      <div class="char-count"><span id="charCount">0</span> 文字</div>
+    </div>
+    <button class="submit-btn" id="submitBtn" onclick="submitAnswer()" disabled>⚡ 採 点 す る</button>
+  </div>
+  <div id="resultArea"></div>
+  <div class="history-section">
+    <div class="noren"><span>今回の戦績</span></div>
+    <div id="historyList"><div class="empty-state">まだ回答がありません</div></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="rankingModal" onclick="if(event.target===this)closeRanking()">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeRanking()">✕</button>
+    <div class="modal-header">
+      <h2>🏆 ネタ点数ランキング</h2>
+      <p>歴代の名作 TOP 10</p>
+    </div>
+    <div class="ranking-list" id="rankingListArea"></div>
+  </div>
+</div>
+
+<script>
+const ALL_TOPICS=[
+  "こんな寿司屋は嫌だ","絶対に売れない新商品","校長先生のスピーチで会場がザワついた理由",
+  "世界一意味のない資格","AIが人間に勝てないこと","合コンで一発アウトになる自己紹介",
+  "お母さんがブチギレた本当の理由","サンタクロースの退職理由","宇宙人が地球に来てガッカリしたこと",
+  "100年後の教科書に載っていること","タイムマシンで過去に行って最初にすること","動物園の新しいアトラクション",
+  "こんなドラえもんの道具はいらない","上司のLINEに書いてあった衝撃の一言","犬が飼い主に内緒でやっていること",
+  "こんな結婚式は嫌だ","深夜のコンビニで目撃した信じられない光景","日本一暇な仕事の内容",
+  "自販機から出てきたらビックリするもの","おばあちゃんの必殺技の名前","こんな遊園地は怖い",
+  "急に売れ始めた謎の商品","電車で隣の人のスマホに映っていたもの","新しい国民の祝日の名前とその理由",
+  "猫が世界征服を企んでいる証拠","こんな病院は不安になる","来年流行る意味不明なギャル語",
+  "アルバイト初日に言ってはいけない一言","カレーに絶対入れてはいけない隠し味",
+  "お化け屋敷で逆にお化けが逃げ出した理由","校庭に突然現れたもの","じいちゃんが最後に検索していたワード",
+  "こんなタクシー運転手は嫌だ","朝起きたら総理大臣になっていた。最初の一言",
+  "魔法が使えるようになったけどしょぼい。どんな魔法？","面接官を爆笑させた志望動機",
+  "寝言で言ったらヤバいセリフ","未来のラーメン屋のメニュー","人類最後の晩餐のメニュー",
+  "引っ越し先の部屋にあったらゾッとする張り紙"
+];
+
+let currentTopics=[],selectedTopic=null,sessionHistory=[],currentUser=null;
+
+/* ===== STORAGE (localStorage) ===== */
+const RANKING_KEY='oogiri_ranking_v1';
+const USER_KEY='oogiri_user_v1';
+
+function loadRanking(){
+  try{ const d=localStorage.getItem(RANKING_KEY); return d?JSON.parse(d):[]; }
+  catch{ return []; }
+}
+function saveRanking(data){
+  try{ localStorage.setItem(RANKING_KEY,JSON.stringify(data)); }catch(e){ console.error(e); }
+}
+function addToRanking(entry){
+  const ranking=loadRanking();
+  ranking.push(entry);
+  ranking.sort((a,b)=>b.score-a.score);
+  if(ranking.length>50) ranking.length=50;
+  saveRanking(ranking);
+  return ranking;
+}
+function loadUser(){
+  try{ const d=localStorage.getItem(USER_KEY); return d?JSON.parse(d):null; }catch{ return null; }
+}
+function saveUser(n){ try{ localStorage.setItem(USER_KEY,JSON.stringify({name:n})); }catch{} }
+function clearUserData(){ try{ localStorage.removeItem(USER_KEY); }catch{} }
+
+/* ===== LOGIN ===== */
+function initApp(){
+  const u=loadUser();
+  if(u&&u.name){ currentUser=u.name; showMainApp(); }
+}
+function enterApp(){
+  const n=document.getElementById('nameInput').value.trim();
+  if(!n) return;
+  currentUser=n; saveUser(n);
+  const s=document.getElementById('loginScreen');
+  s.classList.add('hiding');
+  setTimeout(()=>{ s.classList.add('gone'); showMainApp(); },600);
+}
+function showMainApp(){
+  document.getElementById('loginScreen').classList.add('gone');
+  document.getElementById('mainApp').classList.remove('gone');
+  document.getElementById('displayName').textContent='🎭 '+currentUser;
+  currentTopics=pickTopics(); renderTopics();
+}
+function logout(){
+  clearUserData(); currentUser=null; sessionHistory=[];
+  document.getElementById('mainApp').classList.add('gone');
+  const s=document.getElementById('loginScreen');
+  s.classList.remove('gone','hiding');
+  document.getElementById('nameInput').value='';
+  document.getElementById('enterBtn').disabled=true;
+  document.getElementById('resultArea').innerHTML='';
+  document.getElementById('historyList').innerHTML='<div class="empty-state">まだ回答がありません</div>';
+}
+document.getElementById('nameInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!document.getElementById('enterBtn').disabled) enterApp();
+});
+
+/* ===== TOPICS ===== */
+function shuffleArray(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+function pickTopics(){return shuffleArray(ALL_TOPICS).slice(0,8);}
+function renderTopics(){
+  const g=document.getElementById('topicsGrid');g.innerHTML='';
+  currentTopics.forEach((t,i)=>{
+    const c=document.createElement('div');
+    c.className='topic-card';c.textContent=t;c.onclick=()=>selectTopic(i);
+    g.appendChild(c);
+  });
+}
+function selectTopic(i){
+  selectedTopic=currentTopics[i];
+  document.querySelectorAll('.topic-card').forEach((c,j)=>c.classList.toggle('selected',j===i));
+  document.getElementById('selectedTopicText').textContent=selectedTopic;
+  document.getElementById('answerInput').value='';
+  document.getElementById('charCount').textContent='0';
+  document.getElementById('resultArea').innerHTML='';
+  updateSubmitState();
+}
+function refreshTopics(){
+  selectedTopic=null;currentTopics=pickTopics();renderTopics();
+  document.getElementById('selectedTopicText').textContent='お題を選んでください';
+  document.getElementById('answerInput').value='';
+  document.getElementById('charCount').textContent='0';
+  document.getElementById('resultArea').innerHTML='';
+  updateSubmitState();
+}
+function updateCharCount(){
+  document.getElementById('charCount').textContent=document.getElementById('answerInput').value.length;
+  updateSubmitState();
+}
+function updateSubmitState(){
+  document.getElementById('submitBtn').disabled=!selectedTopic||!document.getElementById('answerInput').value.trim();
+}
+
+/* ===== SCORING ===== */
+function getScoreColor(s){return s>=80?'color-great':s>=60?'color-good':s>=40?'color-ok':'color-low';}
+function getScoreStroke(s){return s>=80?'var(--gold)':s>=60?'var(--green)':s>=40?'var(--blue)':'var(--red)';}
+function getBarColor(s){return s>=80?'var(--gold)':s>=60?'var(--green)':s>=40?'var(--blue)':'var(--red)';}
+function getRankLabel(s){
+  if(s>=90)return'🏆 天才';if(s>=80)return'🔥 爆笑';if(s>=70)return'😂 上手い';
+  if(s>=60)return'😄 なかなか';if(s>=50)return'🙂 惜しい';if(s>=40)return'😐 もう一声';
+  if(s>=30)return'💪 修行中';return'📚 基礎から';
+}
+
+const CRITERIA=[
+  {key:'surprise',label:'意外性',icon:'💡',max:15,color:'var(--gold)'},
+  {key:'twist',label:'裏切り力',icon:'🔄',max:15,color:'var(--orange)'},
+  {key:'wordplay',label:'言葉選び',icon:'✏️',max:12,color:'var(--blue)'},
+  {key:'rhythm',label:'テンポ',icon:'🥁',max:8,color:'var(--purple)'},
+  {key:'imagery',label:'映像喚起力',icon:'🎬',max:12,color:'var(--green)'},
+  {key:'relatability',label:'共感',icon:'🤝',max:13,color:'var(--pink)'},
+  {key:'coherence',label:'整合性',icon:'🎯',max:10,color:'var(--cream)'},
+  {key:'brevity',label:'切れ味',icon:'⚔️',max:15,color:'var(--red)'},
+];
+
+async function submitAnswer(){
+  const answer=document.getElementById('answerInput').value.trim();
+  if(!selectedTopic||!answer)return;
+  const resultArea=document.getElementById('resultArea');
+  resultArea.innerHTML='<div class="result-panel"><div class="loading-overlay"><div class="loading-dots"><span></span><span></span><span></span></div><div class="loading-text">師範が採点中...</div></div></div>';
+  document.getElementById('submitBtn').disabled=true;
+
+  let result;
+  try{
+    const resp=await fetch('/api/score',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({topic:selectedTopic,answer})
+    });
+    if(!resp.ok) throw new Error('API error '+resp.status);
+    result=await resp.json();
+    if(result.error) throw new Error(result.error);
+  }catch(e){
+    console.error(e);
+    result=localScore(answer);
+  }
+  showResult(result,answer);
+}
+
+function localScore(answer){
+  const r=()=>Math.max(1,Math.floor(Math.random()*6)+3);
+  let t=0;const scores={};
+  CRITERIA.forEach(c=>{const v=r();scores[c.key]=v;scores['c_'+c.key]='簡易採点';t+=v;});
+  return{total:Math.min(100,t),...scores,
+    advice:'APIに接続できなかったため簡易採点です。Vercel環境変数にANTHROPIC_API_KEYを設定するとAIが詳細に採点します。'};
+}
+
+function showResult(result,answer){
+  const s=result.total,offset=408-(408*s/100);
+  const ra=document.getElementById('resultArea');
+
+  let analysisHTML=CRITERIA.map(c=>{
+    const val=result[c.key]||0;
+    const pct=Math.round(val/c.max*100);
+    const comment=result['c_'+c.key]||'';
+    return`<div class="analysis-item">
+      <div class="a-header">
+        <span class="a-label"><span class="a-icon">${c.icon}</span> ${c.label}</span>
+        <span class="a-score" style="color:${getBarColor(pct)}">${val}<small style="opacity:.5">/${c.max}</small></span>
+      </div>
+      <div class="a-bar"><div class="a-bar-fill" data-pct="${pct}" style="background:${c.color}"></div></div>
+      <div class="a-comment">${esc(comment)}</div>
+    </div>`;
+  }).join('');
+
+  ra.innerHTML=`
+    <div class="result-panel">
+      <div class="score-header">
+        <div class="score-ring"><svg viewBox="0 0 140 140">
+          <circle class="bg-circle" cx="70" cy="70" r="65"/>
+          <circle class="score-circle" cx="70" cy="70" r="65" stroke="${getScoreStroke(s)}" style="stroke-dashoffset:${offset}"/>
+        </svg><div class="score-number ${getScoreColor(s)}">${s}<small>点</small></div></div>
+        <div class="score-label ${getScoreColor(s)}">${getRankLabel(s)}</div>
+      </div>
+      <div class="analysis-grid">${analysisHTML}</div>
+      <div class="advice-section">
+        <div class="advice-title">📝 師範の総評</div>
+        <div class="advice-text"><p>${esc(result.advice||'')}</p></div>
+      </div>
+    </div>`;
+
+  setTimeout(()=>{
+    ra.querySelectorAll('.a-bar-fill').forEach(bar=>{bar.style.width=bar.dataset.pct+'%';});
+    const circle=ra.querySelector('.score-circle');
+    if(circle)circle.style.strokeDashoffset=offset;
+  },100);
+
+  addToRanking({name:currentUser,topic:selectedTopic,answer,score:s,ts:Date.now()});
+  sessionHistory.unshift({topic:selectedTopic,answer,score:s});
+  renderHistory();
+  document.getElementById('answerInput').value='';
+  document.getElementById('charCount').textContent='0';
+  updateSubmitState();
+}
+
+function renderHistory(){
+  const l=document.getElementById('historyList');
+  if(!sessionHistory.length){l.innerHTML='<div class="empty-state">まだ回答がありません</div>';return;}
+  l.innerHTML=sessionHistory.slice(0,10).map(h=>`
+    <div class="history-item"><div><div class="h-topic">${esc(h.topic)}</div><div class="h-answer">${esc(h.answer.length>30?h.answer.slice(0,30)+'…':h.answer)}</div></div>
+    <div class="h-score ${getScoreColor(h.score)}">${h.score}</div></div>`).join('');
+}
+
+/* ===== RANKING ===== */
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+function openRanking(){
+  document.getElementById('rankingModal').classList.add('active');
+  renderRanking(loadRanking());
+}
+function closeRanking(){document.getElementById('rankingModal').classList.remove('active');}
+
+function renderRanking(ranking){
+  const list=document.getElementById('rankingListArea');
+  if(!ranking.length){
+    list.innerHTML='<div class="ranking-empty">まだ誰も回答していません。<br>最初の伝説を作ろう！</div>';
+    return;
+  }
+  const top10=ranking.slice(0,10);
+  const rankClasses=['rank-1st','rank-2nd','rank-3rd'];
+  list.innerHTML=top10.map((e,i)=>{
+    const cls=i<3?rankClasses[i]:'';
+    const medalHTML=i<3
+      ?`<div class="sparkle-wrap"><div class="rank-medal">${i+1}</div></div>`
+      :`<div class="rank-num">${i+1}</div>`;
+    return`<div class="rank-row ${cls}" style="animation-delay:${i*.06}s">
+      ${medalHTML}
+      <div class="rank-info">
+        <div class="rank-name">${esc(e.name)}</div>
+        <div class="rank-answer">${esc(e.answer.length>28?e.answer.slice(0,28)+'…':e.answer)}</div>
+        <div class="rank-topic">${esc(e.topic)}</div>
+      </div>
+      <div class="rank-score">${e.score}<small>点</small></div>
+    </div>`;
+  }).join('');
+}
+
+/* ===== INIT ===== */
+initApp();
+</script>
+</body>
+</html>
